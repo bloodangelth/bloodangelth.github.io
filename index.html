@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CICCCGPT</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+    <div class="chatbot-container">
+        
+        <!-- HEADER -->
+        <header class="chatbot-header">
+            <div class="header-content">
+                <img src="cicc.png" class="logo">
+                <div class="title-group">
+                    <h3>CICC Chatbot</h3>
+                    <p>ออนไลน์ • AI Model CICC</p>
+                </div>
+            </div>
+            <i class="fas fa-bars menu-icon"></i>
+        </header>
+
+        <!-- CHAT AREA -->
+        <div class="chat-area" id="chatArea">
+            <div class="message-group bot">
+                <div class="avatar">🤖</div>
+                <div class="message bot-message">
+                    <p>สวัสดีครับ! ผมคือ CICC Chatbot พร้อมช่วยเหลือเรื่องข้อมูลของวิทยาลัยอาชีวศึกษา</p>
+                    <p class="suggestion">
+                        คุณสามารถถามเกี่ยวกับ:  
+                        <code>เวลาทำการ</code>,
+                        <code>ช่องทางติดต่อ</code>,
+                        <code>บริการหลัก</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- INPUT -->
+        <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+                <textarea id="userInput" placeholder="ส่งข้อความถึง CICC Chatbot..." rows="1"></textarea>
+                <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <p class="disclaimer">⚠ อาจมีข้อมูลคลาดเคลื่อน โปรดตรวจสอบข้อมูลสำคัญ</p>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chatArea = document.getElementById('chatArea');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    function appendMessage(sender, text) {
+        const messageGroup = document.createElement('div');
+        messageGroup.classList.add('message-group', sender);
+
+        const avatar = document.createElement('div');
+        avatar.classList.add('avatar');
+        avatar.textContent = sender === 'user' ? '👤' : '🤖';
+
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', `${sender}-message`);
+        messageDiv.innerHTML = `<p>${text.replace(/\n/g, '</p><p>')}</p>`;
+
+        messageGroup.appendChild(avatar);
+        messageGroup.appendChild(messageDiv);
+        chatArea.appendChild(messageGroup);
+
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function getBotResponse(text) {
+        const msg = text.toLowerCase().trim();
+
+        if (msg.includes("สวัสดี")) {
+            return "สวัสดีครับ! มีเรื่องอะไรให้ช่วยไหมครับ?";
+        }
+        if (msg.includes("เวลาทำการ")) {
+            return "เวลาทำการ: จันทร์–ศุกร์ 08.30 – 16.30 น.";
+        }
+        if (msg.includes("ติดต่อ") || msg.includes("เบอร์")) {
+            return "อาจารย์มอส\n📞 064 565 3117 \nFacebook https://www.facebook.com/share/1Ab3CQ799w/ \n อาจารย์A \n📞 064-xxx-xxx ";
+        }
+        if (msg.includes("บริการ")) {
+            return "บริการหลัก:\n• การให้คำปรึกษา\n• งานทะเบียน\n• งานวิชาการ\n• งานกิจการนักศึกษา";
+        }
+        if (msg.includes("ขอบคุณ")) {
+            return "ยินดีครับ! มีอะไรถามเพิ่มได้เลยนะครับ 😊";
+        }
+        return "ผมยังไม่เข้าใจคำถาม ขอให้ลองระบุคำให้ชัดเจนขึ้น เช่น 'เวลาทำการ' หรือ 'การติดต่อ' ครับ";
+    }
+
+    function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        appendMessage("user", text);
+        userInput.value = "";
+        adjustTextareaHeight();
+
+        setTimeout(() => {
+            appendMessage("bot", getBotResponse(text));
+        }, 500);
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+
+    userInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    function adjustTextareaHeight() {
+        userInput.style.height = "auto";
+        const maxHeight = 5 * parseFloat(getComputedStyle(userInput).lineHeight);
+        userInput.style.height = Math.min(userInput.scrollHeight, maxHeight) + "px";
+    }
+
+    userInput.addEventListener("input", adjustTextareaHeight);
+});
+</script>
+<script src="stylesheet" href="styles.css"></script>
+<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
+<input type="file" id="doc-file-input" accept=".doc,.docx" />
+
+
+</body>
+</html>
