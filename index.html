@@ -2,52 +2,262 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CICCCGPT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CICC Chatbot</title>
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --primary-color: #bb0d0d; /* สีธีมหลัก */
+            --bg-color: #f4f4f9;
+            --chat-bg: #ffffff;
+            --user-msg-bg: #0056b3;
+            --bot-msg-bg: #e9ecef;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* ป้องกันการเลื่อนทั้งหน้า */
+        }
+
+        /* --- HEADER --- */
+        .chatbot-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            max-width: 600px; /* จำกัดความกว้างถ้ารันบนจอคอม */
+            margin: 0 auto;
+            background: var(--chat-bg);
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .chatbot-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(209, 18, 18, 0.1);
+            z-index: 10;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: white;
+            padding: 2px;
+        }
+
+        .title-group h3 {
+            font-size: 1.2rem;
+            margin-bottom: 2px;
+        }
+
+        .title-group p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        /* --- CHAT AREA --- */
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fff;
+            scroll-behavior: smooth;
+        }
+
+        .message-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .message-group.user {
+            flex-direction: row-reverse;
+        }
+
+        /* รูป Avatar */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            overflow: hidden; /* ตัดขอบรูปให้กลม */
+            background-color: #eee;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-icon {
+            font-size: 24px; /* สำหรับ icon ผู้ใช้ */
+        }
+
+        /* กล่องข้อความ */
+        .message {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 1rem; /* ขนาดตัวอักษร 16px อ่านง่าย */
+            line-height: 1.5;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .bot-message {
+            background-color: var(--bot-msg-bg);
+            color: #333;
+            border-top-left-radius: 4px;
+        }
+
+        .user-message {
+            background-color: var(--user-msg-bg);
+            color: white;
+            border-top-right-radius: 4px;
+        }
+
+        .suggestion code {
+            background: rgba(0,0,0,0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #d63384;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        /* --- INPUT AREA --- */
+        .chat-input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 25px;
+            border: 1px solid #ddd;
+        }
+
+        textarea {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px;
+            font-size: 16px; /* สำคัญ: 16px ป้องกัน iOS ซูม */
+            resize: none;
+            max-height: 120px;
+            outline: none;
+        }
+
+        #sendBtn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            flex-shrink: 0;
+            margin-bottom: 2px;
+        }
+
+        #sendBtn:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .disclaimer {
+            font-size: 0.75rem;
+            color: #888;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* ไอคอน FontAwesome (ถ้าไม่ได้ใช้ CDN อาจจะไม่ขึ้น ให้ใช้ Emoji แทนในปุ่มได้) */
+        button i { font-size: 18px; }
+
+        /* ส่วน Upload File (เก็บไว้ด้านล่างสุด) */
+        #doc-file-input {
+            display: none; /* ซ่อนไว้ก่อน หรือจัด CSS ให้สวยถ้าต้องการใช้ */
+            margin: 10px auto;
+        }
+    </style>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
 <body>
     <div class="chatbot-container">
         
-        <!-- HEADER -->
         <header class="chatbot-header">
             <div class="header-content">
-                <img src="cicc.png" class="logo">
+                <img src="cicc.png" class="logo" alt="CICC Logo">
                 <div class="title-group">
                     <h3>CICC Chatbot</h3>
                     <p>ออนไลน์ • AI Model CICC</p>
                 </div>
             </div>
-            <i class="fas fa-bars menu-icon"></i>
-        </header>
+            </header>
 
-        <!-- CHAT AREA -->
         <div class="chat-area" id="chatArea">
             <div class="message-group bot">
-                <div class="avatar">🤖</div>
+                <div class="avatar">
+                    <img src="cicc.png" alt="Bot">
+                </div>
                 <div class="message bot-message">
                     <p>สวัสดีครับ! ผมคือ CICC Chatbot พร้อมช่วยเหลือเรื่องข้อมูลของวิทยาลัยอาชีวศึกษา</p>
                     <p class="suggestion">
-                        คุณสามารถถามเกี่ยวกับ:  
-                        <code>เวลาทำการ</code>,
-                        <code>ช่องทางติดต่อ</code>,
+                        คุณสามารถถามเกี่ยวกับ: <br>
+                        <code>เวลาทำการ</code>, 
+                        <code>ช่องทางติดต่อ</code>, 
                         <code>บริการหลัก</code>
                     </p>
                 </div>
             </div>
         </div>
 
-        <!-- INPUT -->
         <div class="chat-input-area">
             <div class="chat-input-wrapper">
-                <textarea id="userInput" placeholder="ส่งข้อความถึง CICC Chatbot..." rows="1"></textarea>
+                <textarea id="userInput" placeholder="พิมพ์ข้อความ..." rows="1"></textarea>
                 <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
             </div>
             <p class="disclaimer">⚠ อาจมีข้อมูลคลาดเคลื่อน โปรดตรวจสอบข้อมูลสำคัญ</p>
+            <input type="file" id="doc-file-input" accept=".doc,.docx" style="display:none;" />
         </div>
     </div>
 
@@ -61,40 +271,56 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageGroup = document.createElement('div');
         messageGroup.classList.add('message-group', sender);
 
-        const avatar = document.createElement('div');
-        avatar.classList.add('avatar');
-        avatar.textContent = sender === 'user' ? '👤' : '🤖';
+        const avatarDiv = document.createElement('div');
+        avatarDiv.classList.add('avatar');
+        
+        // --- ส่วนแก้ไข Logic Avatar ---
+        if (sender === 'user') {
+            // ถ้าเป็น user ให้เป็นไอคอนคน
+            const iconSpan = document.createElement('span');
+            iconSpan.classList.add('avatar-icon');
+            iconSpan.textContent = '👤'; 
+            avatarDiv.appendChild(iconSpan);
+        } else {
+            // ถ้าเป็น bot ให้ใส่รูป cicc.png
+            const img = document.createElement('img');
+            img.src = 'cicc.png';
+            img.alt = 'CICC Bot';
+            avatarDiv.appendChild(img);
+        }
 
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', `${sender}-message`);
-        messageDiv.innerHTML = `<p>${text.replace(/\n/g, '</p><p>')}</p>`;
+        // ใช้ innerHTML เพื่อรองรับการขึ้นบรรทัดใหม่
+        messageDiv.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
 
-        messageGroup.appendChild(avatar);
+        messageGroup.appendChild(avatarDiv);
         messageGroup.appendChild(messageDiv);
         chatArea.appendChild(messageGroup);
 
+        // เลื่อนลงล่างสุด
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
     function getBotResponse(text) {
         const msg = text.toLowerCase().trim();
 
-        if (msg.includes("สวัสดี")) {
+        if (msg.includes("สวัสดี") || msg.includes("หวัดดี")) {
             return "สวัสดีครับ! มีเรื่องอะไรให้ช่วยไหมครับ?";
         }
-        if (msg.includes("เวลาทำการ")) {
-            return "เวลาทำการ: จันทร์–ศุกร์ 08.30 – 16.30 น.";
+        if (msg.includes("เวลาทำการ") || msg.includes("เปิดกี่โมง")) {
+            return "🕒 เวลาทำการ:\nจันทร์ – ศุกร์\n08.30 – 16.30 น.";
         }
-        if (msg.includes("ติดต่อ") || msg.includes("เบอร์")) {
-            return "อาจารย์มอส\n📞 064 565 3117 \nFacebook https://www.facebook.com/share/1Ab3CQ799w/ \n อาจารย์A \n📞 064-xxx-xxx ";
+        if (msg.includes("ติดต่อ") || msg.includes("เบอร์") || msg.includes("โทร")) {
+            return "📞 ช่องทางติดต่อ:\n\n1. อาจารย์มอส\nโทร: 064 565 3117\nFB: facebook.com/share/1Ab3CQ799w/\n\n2. อาจารย์ A\nโทร: 064-xxx-xxx";
         }
-        if (msg.includes("บริการ")) {
-            return "บริการหลัก:\n• การให้คำปรึกษา\n• งานทะเบียน\n• งานวิชาการ\n• งานกิจการนักศึกษา";
+        if (msg.includes("บริการ") || msg.includes("ทำอะไรได้บ้าง")) {
+            return "📚 บริการหลัก:\n• การให้คำปรึกษา\n• งานทะเบียน\n• งานวิชาการ\n• งานกิจการนักศึกษา";
         }
         if (msg.includes("ขอบคุณ")) {
             return "ยินดีครับ! มีอะไรถามเพิ่มได้เลยนะครับ 😊";
         }
-        return "ผมยังไม่เข้าใจคำถาม ขอให้ลองระบุคำให้ชัดเจนขึ้น เช่น 'เวลาทำการ' หรือ 'การติดต่อ' ครับ";
+        return "ขอโทษครับ ผมยังไม่เข้าใจคำถามนี้ \nลองถามว่า 'เวลาทำการ' หรือ 'เบอร์ติดต่อ' ดูนะครับ";
     }
 
     function sendMessage() {
@@ -105,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.value = "";
         adjustTextareaHeight();
 
+        // จำลองการพิมพ์ (Loading) นิดหน่อยก็ได้ แต่ใส่ Timeout ไว้เหมือนเดิม
         setTimeout(() => {
             appendMessage("bot", getBotResponse(text));
         }, 500);
@@ -121,18 +348,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function adjustTextareaHeight() {
         userInput.style.height = "auto";
-        const maxHeight = 5 * parseFloat(getComputedStyle(userInput).lineHeight);
-        userInput.style.height = Math.min(userInput.scrollHeight, maxHeight) + "px";
+        userInput.style.height = userInput.scrollHeight + "px";
+        // รีเซ็ตความสูงถ้าน้อยกว่าค่าเริ่มต้น (เพื่อไม่ให้ค้างตอนลบข้อความ)
+        if(userInput.value === '') userInput.style.height = 'auto';
     }
 
     userInput.addEventListener("input", adjustTextareaHeight);
 });
 </script>
-<script src="stylesheet" href="styles.css"></script>
-<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
-
-<input type="file" id="doc-file-input" accept=".doc,.docx" />
-
 
 </body>
 </html>
