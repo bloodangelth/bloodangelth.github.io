@@ -81,7 +81,7 @@
         .chat-area {
             flex: 1;
             padding: 20px;
-            padding-bottom: 10px; /* ลด padding ล่างเพราะมีเมนูลอย */
+            padding-bottom: 10px; /* ลด padding ล่างนิดหน่อยเพราะมีเมนูลอย */
             overflow-y: auto;
             background: #fff;
             scroll-behavior: smooth;
@@ -144,7 +144,7 @@
         }
 
         /* --- (UPDATED) Quick Menu Bar Style --- */
-        /* ย้ายมาอยู่ด้านล่างแทน */
+        /* ย้ายมาไว้ด้านล่าง เหนือช่องพิมพ์ */
         .quick-menu-bar {
             display: flex;
             gap: 8px;
@@ -208,7 +208,7 @@
 
         /* --- INPUT AREA --- */
         .chat-input-area {
-            padding: 10px 15px 15px 15px;
+            padding: 10px 15px 15px 15px; /* ปรับ Padding */
             background: white;
             border-top: 1px solid #eee;
             display: flex;
@@ -252,12 +252,19 @@
             margin-bottom: 2px;
         }
 
+        #sendBtn:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
         .disclaimer {
             font-size: 0.75rem;
             color: #888;
             text-align: center;
             margin-top: 8px;
         }
+
+        button i { font-size: 18px; }
     </style>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -299,12 +306,12 @@
                     <i class="far fa-clock"></i> เวลาทำการ
                 </button>
                 <button class="quick-btn" onclick="sendQuickMessage('ช่องทางติดต่อ')">
-                    <i class="fas fa-phone-alt"></i> ติดต่อ
+                    <i class="fas fa-phone-alt"></i> ช่องทางติดต่อ
                 </button>
                 <button class="quick-btn" onclick="sendQuickMessage('บริการหลัก')">
-                    <i class="fas fa-book-open"></i> บริการ
+                    <i class="fas fa-book-open"></i> บริการหลัก
                 </button>
-                </div>
+            </div>
             <div class="chat-input-wrapper">
                 <textarea id="userInput" placeholder="พิมพ์ข้อความ..." rows="1"></textarea>
                 <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
