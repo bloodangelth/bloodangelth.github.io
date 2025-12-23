@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    // --- ระบบเสียงแบบใหม่ (Robust System) ---
+    // --- ระบบเสียงแบบใหม่ (Robust System for Mobile) ---
     playFinalVoice = function(text) {
         // 1. หยุดเสียงเก่าก่อน (ถ้ามี)
         if (currentAudio) {
@@ -337,15 +337,16 @@ document.addEventListener('DOMContentLoaded', () => {
         let cleanText = text.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
         if(!cleanText) return;
 
-        // 3. พยายามใช้ Google Voice เป็นอันดับแรก (เพราะเสียงเพราะกว่า)
+        // 3. เริ่มกระบวนการเล่นเสียง (พยายามใช้ Google ก่อน)
         playGoogleQueue(cleanText);
     }
 
+    // ฟังก์ชันเล่นเสียง Google แบบหั่นท่อน (แก้ปัญหาเสียงดับบนมือถือ)
     function playGoogleQueue(text) {
-        const MAX_LEN = 100; // ตัดคำเพื่อป้องกัน Google บล็อก
+        const MAX_LEN = 100; // ตัดคำสั้นๆ เพื่อให้ Google ยอมปล่อยเสียง
         let sentences = [];
         
-        // หั่นข้อความแบบบ้านๆ
+        // หั่นข้อความ
         while (text.length > 0) {
             let chunk = text.substring(0, MAX_LEN);
             let lastSpace = chunk.lastIndexOf(' ');
@@ -360,29 +361,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (index >= sentences.length) return; // จบแล้ว
 
             let chunk = sentences[index];
+            // URL สำหรับขอไฟล์เสียง
             let url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=th&client=tw-ob`;
             
             let audio = new Audio(url);
             currentAudio = audio; // เก็บลงตัวแปร Global
 
-            // ถ้าเล่นจบ ให้เล่นท่อนต่อไป
+            // เมื่อเล่นจบท่อนนี้ ให้เล่นท่อนต่อไป
             audio.onended = function() {
                 index++;
                 playNextChunk();
             };
 
-            // *** สำคัญ: ถ้า Google Error (เช่นในมือถือบางรุ่น หรือเน็ตหลุด) ให้ใช้เสียงเครื่องแทน ***
+            // *** สำคัญ: ถ้า Google Error (เช่นในมือถือบางรุ่น) ให้ใช้เสียงเครื่องแทนทันที ***
             audio.onerror = function() {
                 console.log("Google Voice Failed, switching to Native.");
-                playNativeFallback(sentences.slice(index).join(" ")); // ส่งข้อความที่เหลือไปอ่านแบบ Native
+                // ส่งข้อความที่เหลือทั้งหมดไปอ่านแบบ Native (ในมือถือเสียง Native ชัดอยู่แล้ว)
+                playNativeFallback(sentences.slice(index).join(" ")); 
             };
 
             // สั่งเล่น
             let playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                    console.log("Audio Play blocked/failed:", error);
-                    // ถ้าโดนบล็อก ให้ลอง Native ทันที
+                    console.log("Auto-play blocked or Network error:", error);
+                    // ถ้าโดนบล็อก หรือเน็ตช้า ให้ใช้เสียงเครื่องแทนทันที
                     playNativeFallback(sentences.slice(index).join(" "));
                 });
             }
@@ -391,17 +394,14 @@ document.addEventListener('DOMContentLoaded', () => {
         playNextChunk(); // เริ่มเล่นท่อนแรก
     }
 
+    // ฟังก์ชันสำรอง ใช้เสียงในเครื่อง (ชัดบนมือถือ Android/iOS)
     function playNativeFallback(text) {
-        if (!('speechSynthesis' in window)) {
-            alert("อุปกรณ์ของคุณไม่รองรับการเล่นเสียง");
-            return;
-        }
+        if (!('speechSynthesis' in window)) return;
         
-        // ยกเลิกเสียงเดิมอีกครั้งเพื่อความชัวร์
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'th-TH'; // ตั้งค่าเป็นไทย
+        utterance.lang = 'th-TH'; 
         utterance.rate = 1.0;
 
         // พยายามหาเสียงไทยในเครื่อง
