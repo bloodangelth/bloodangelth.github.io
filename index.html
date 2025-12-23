@@ -296,7 +296,7 @@
                         </button>
                     </div>
 
-                    <button class="tts-btn" onclick="playSmartVoice('สวัสดีครับ ผมคือ CICC Chatbot ยินดีให้บริการข้อมูลครับ')">
+                    <button class="tts-btn" onclick="playFinalVoice('สวัสดีครับ ผมคือ CICC Chatbot ยินดีให้บริการข้อมูลครับ เลือกหัวข้อด้านล่าง หรือพิมพ์ถามได้เลยครับ')">
                         <i class="fas fa-volume-up"></i> ฟังเสียง
                     </button>
 
@@ -314,76 +314,104 @@
     </div>
 
 <script>
-// ประกาศตัวแปร Global
-let appendMessage, getBotResponse, playSmartVoice;
+let appendMessage, getBotResponse, playFinalVoice;
+let currentAudio = null; // ตัวแปรเก็บเสียงที่กำลังเล่น
 
 document.addEventListener('DOMContentLoaded', () => {
     const chatArea = document.getElementById('chatArea');
     const userInput = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    // --- (NEW) ระบบเสียงอัจฉริยะ (Hybrid) ---
-    playSmartVoice = function(text) {
-        // ล้างข้อความให้สะอาด
+    // --- ระบบเสียงแบบใหม่ (Robust System) ---
+    playFinalVoice = function(text) {
+        // 1. หยุดเสียงเก่าก่อน (ถ้ามี)
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+
+        // 2. เตรียมข้อความ
         let cleanText = text.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
         if(!cleanText) return;
 
-        // ตรวจสอบว่าเป็นมือถือหรือไม่
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        if (isMobile) {
-            // [กรณีมือถือ] ใช้ระบบ Native เพราะมีเสียงไทยคุณภาพดี (Siri/Google) อยู่แล้ว และเสถียรกว่า
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(cleanText);
-                utterance.lang = 'th-TH'; // บังคับภาษาไทย
-                utterance.rate = 1.0; 
-                window.speechSynthesis.speak(utterance);
-            } else {
-                alert("อุปกรณ์นี้ไม่รองรับเสียง");
-            }
-        } else {
-            // [กรณี PC/Windows] ใช้ Google Online เพราะ Windows มักไม่มีเสียงไทย
-            playGoogleVoicePC(cleanText);
-        }
+        // 3. พยายามใช้ Google Voice เป็นอันดับแรก (เพราะเสียงเพราะกว่า)
+        playGoogleQueue(cleanText);
     }
 
-    // ฟังก์ชันย่อยสำหรับ PC: เล่นเสียง Google แบบตัดคำ (แก้ปัญหาข้อความยาวแล้วเสียงดับ)
-    function playGoogleVoicePC(text) {
-        const MAX_LEN = 100; // Google API รับได้ประมาณ 100 ตัวอักษรต่อครั้ง
-        const chunks = [];
+    function playGoogleQueue(text) {
+        const MAX_LEN = 100; // ตัดคำเพื่อป้องกัน Google บล็อก
+        let sentences = [];
         
-        // แบ่งข้อความเป็นท่อนๆ
+        // หั่นข้อความแบบบ้านๆ
         while (text.length > 0) {
             let chunk = text.substring(0, MAX_LEN);
             let lastSpace = chunk.lastIndexOf(' ');
-            if (lastSpace > 0 && text.length > MAX_LEN) {
-                 chunk = chunk.substring(0, lastSpace);
-            }
-            chunks.push(chunk);
+            if (lastSpace > 0 && text.length > MAX_LEN) chunk = chunk.substring(0, lastSpace);
+            sentences.push(chunk);
             text = text.substring(chunk.length).trim();
         }
 
-        // เล่นเสียงทีละท่อนต่อเนื่องกัน
         let index = 0;
-        function playNext() {
-            if (index >= chunks.length) return;
+        
+        function playNextChunk() {
+            if (index >= sentences.length) return; // จบแล้ว
+
+            let chunk = sentences[index];
+            let url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=th&client=tw-ob`;
             
-            const audioUrl = `https://translate.google.co.th/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunks[index])}&tl=th&client=tw-ob`;
-            const audio = new Audio(audioUrl);
-            audio.playbackRate = 1.0;
-            
-            // เมื่อจบท่อนนี้ ให้เล่นท่อนต่อไป
+            let audio = new Audio(url);
+            currentAudio = audio; // เก็บลงตัวแปร Global
+
+            // ถ้าเล่นจบ ให้เล่นท่อนต่อไป
             audio.onended = function() {
                 index++;
-                playNext();
+                playNextChunk();
             };
-            
-            audio.play().catch(e => console.error("Audio error:", e));
+
+            // *** สำคัญ: ถ้า Google Error (เช่นในมือถือบางรุ่น หรือเน็ตหลุด) ให้ใช้เสียงเครื่องแทน ***
+            audio.onerror = function() {
+                console.log("Google Voice Failed, switching to Native.");
+                playNativeFallback(sentences.slice(index).join(" ")); // ส่งข้อความที่เหลือไปอ่านแบบ Native
+            };
+
+            // สั่งเล่น
+            let playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Audio Play blocked/failed:", error);
+                    // ถ้าโดนบล็อก ให้ลอง Native ทันที
+                    playNativeFallback(sentences.slice(index).join(" "));
+                });
+            }
         }
-        playNext(); // เริ่มเล่นท่อนแรก
+
+        playNextChunk(); // เริ่มเล่นท่อนแรก
     }
-    // -------------------------------------------------------
+
+    function playNativeFallback(text) {
+        if (!('speechSynthesis' in window)) {
+            alert("อุปกรณ์ของคุณไม่รองรับการเล่นเสียง");
+            return;
+        }
+        
+        // ยกเลิกเสียงเดิมอีกครั้งเพื่อความชัวร์
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'th-TH'; // ตั้งค่าเป็นไทย
+        utterance.rate = 1.0;
+
+        // พยายามหาเสียงไทยในเครื่อง
+        let voices = window.speechSynthesis.getVoices();
+        let thaiVoice = voices.find(v => v.lang.includes('th'));
+        if (thaiVoice) utterance.voice = thaiVoice;
+
+        window.speechSynthesis.speak(utterance);
+    }
+    // ----------------------------------------
 
     appendMessage = function(sender, text) {
         const messageGroup = document.createElement('div');
@@ -408,14 +436,13 @@ document.addEventListener('DOMContentLoaded', () => {
         messageDiv.classList.add('message', `${sender}-message`);
         messageDiv.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
 
-        // เพิ่มปุ่มฟังเสียง เฉพาะฝั่ง Bot
         if (sender === 'bot') {
             const ttsButton = document.createElement('button');
             ttsButton.className = 'tts-btn';
             ttsButton.innerHTML = '<i class="fas fa-volume-up"></i> ฟังเสียง';
             
             ttsButton.onclick = function() {
-                playSmartVoice(text);
+                playFinalVoice(text);
             };
 
             messageDiv.appendChild(ttsButton);
